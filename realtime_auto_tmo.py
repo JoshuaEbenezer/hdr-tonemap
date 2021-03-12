@@ -54,6 +54,7 @@ def vid_tmo(i):
 
     print(framenos)
     for frame_num in range(framenos):
+        print(frame_num, "is the current frame number")
         y,u,v= hdr_utils.hdr_yuv_read(input_file,frame_num,h,w)
 
         # convert to RGB in BT2020
@@ -107,15 +108,12 @@ def vid_tmo(i):
             B_curr = B
             a_curr = a
 
-        print(L_av)
         
         # apply tonemap
         lwhite_sq = hdr_upper**2 
         image = a_curr*y_bt709_linear_clipped/L_av
         y_bt709_tonemapped_linear = image*(1+image/lwhite_sq)/(1+image)
-        print(np.min(y_bt709_tonemapped_linear),np.max(y_bt709_tonemapped_linear))
 
-        print(A_curr)
 
         # update
         A_prev = A_curr
