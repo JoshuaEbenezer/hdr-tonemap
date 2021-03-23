@@ -1,9 +1,8 @@
 % function mov = loadFileYuv(fileName, width, height, idxFrame)
 
-function [imgRgb] = loadFileYuv(fileName, width, height, framenum)
+function [imgRgb] = loadFileYuv(fileId, width, height, framenum)
 % load RGB movie [0, 255] from YUV 4:2:0 file
 
-fileId = fopen(fileName, 'r');
 
 subSampleMat = [1, 1; 1, 1];
 
@@ -41,4 +40,3 @@ imgRgb = reshape(convertYuvToRgb(reshape(imgYuv, height * width, 3)), height, wi
 %Image = imread(name, 'bmp');
 %figure, imshow(Image);
 
-fclose(fileId);

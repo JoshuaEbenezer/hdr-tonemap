@@ -13,13 +13,23 @@ for k=1:length(yuv_names)
     fullFileName = char(yuv_names(k));
     [~, baseFileNameNoExt, ~] = fileparts(fullFileName);
     outfile = fullfile(out_folder,[baseFileNameNoExt,'.avi']);
-    imids = 1:framenos;
+    if isfile(outfile)
+        continue
+    end
+        
+    imids = 1:framenos(k)-1;
     v = VideoWriter(outfile,'Motion JPEG AVI');
     v.FrameRate = fps(k);
+    v.Quality=95;
     open(v);
 
     % parameters
     nrims = length(imids);
+    
+    fileId = fopen(fullFileName, 'r');
+
+
+    
     nrbins = 5000; % nr of bins in the histogram
     K = 256; % nr of output bins
     wc = 0.7; % weighting between the two different color models
@@ -31,14 +41,19 @@ for k=1:length(yuv_names)
     h =h_list(k);
 
 
-    im=double(loadFileYuv(fullFileName,w,h,1));
+    im=double(loadFileYuv(fileId,w,h,1));
     %im=pfs_read_image([imbase sprintf('%3.3d',imids(1)) imext]);
     maxfact = double(mf/max(im(:)));
 
     [N,M,C]=size(im);
     imseq = zeros(N,M,C,imstack_length,'single');
     for iii = 1:imstack_length,
-        imseq(:,:,:,iii)= double(loadFileYuv(fullFileName,w,h,iii));
+        try
+            imseq(:,:,:,iii)= double(loadFileYuv(fileId,w,h,iii));
+        catch
+                text = [fullFileName,' has erroneous metadata!'];
+                disp(text);
+        end
         %imseq(:,:,:,iii)=pfs_read_image([imbase sprintf('%3.3d',imids(iii)) imext]);
     end
 
@@ -60,15 +75,26 @@ for k=1:length(yuv_names)
 
     imid = 1+nbrfwbw;
     while imid<=(nrims-interp_length-nbrfwbw)
-        for iii = -nbrfwbw:nbrfwbw                                                    
-            imseq(:,:,:,nbrfwbw+1+iii)=double(loadFileYuv(fullFileName,w,h,imids(iii+interp_length+imid)));
+        
+        for iii = -nbrfwbw:nbrfwbw      
+            try
+                imseq(:,:,:,nbrfwbw+1+iii)=double(loadFileYuv(fileId,w,h,imids(iii+interp_length+imid)));
+            catch
+                text = [fullFileName,' has erroneous metadata!'];
+                disp(text);
+            end
             %imseq(:,:,:,nbrfwbw+1+iii)=pfs_read_image([imbase sprintf('%3.3d',imids(iii+interp_length+imid)) imext]);
         end
         [hh,bb,maxy2] = histkeyframe(imseq,nrbins,maxfact);
         [c_2,id_2]=dtm_nopa_histxin(hh,bb,K,maxy2);
         for iii = 1:interp_length
             %im = pfs_read_image([imbase sprintf('%3.3d',imids(iii+imid-1)) imext]);
-            im = double(loadFileYuv(fullFileName,w,h,imids(iii+imid-1)));
+            try
+                im = double(loadFileYuv(fileId,w,h,imids(iii+imid-1)));
+            catch
+                text = [fullFileName,' has erroneous metadata!'];
+                disp(text);                % continue
+            end
             w1 = (interp_length+1-iii)/(interp_length);
             w2 = (iii-1)/(interp_length);
             maxy = double(log(1+maxfact*max(im(:))));
@@ -94,16 +120,26 @@ for k=1:length(yuv_names)
 
     nrleft = nrims-imid+1;
 
-    if imid<=nrims,
-        for iii = -nbrfwbw:nbrfwbw                                                    ,
-            imseq(:,:,:,nbrfwbw+1+iii)=hdrread([imbase sprintf('%3.3d',imids(nrims-nbrfwbw+iii)) imext]);
+    if imid<=nrims, 
+
+        for iii = -nbrfwbw:nbrfwbw                                                    
+            try
+                imseq(:,:,:,nbrfwbw+1+iii)=double(loadFileYuv(fileId,w,h,imids(nrims-nbrfwbw+iii)));
+            catch
+                disp([fullFileName," has erroneous metadata!"])
+                % continue
+            end
             %imseq(:,:,:,nbrfwbw+1+iii)=pfs_read_image([imbase sprintf('%3.3d',imids(nrims-nbrfwbw+iii)) imext]);
         end
         [hh,bb,maxy2] = histkeyframe(imseq,nrbins,maxfact);
         [c_2,id_2]=dtm_nopa_histxin(hh,bb,K,maxy2);
         for iii = 1:nrleft,
             %im = pfs_read_image([imbase sprintf('%3.3d',imids(iii+imid-1)) imext]);
-            im = hdrread([imbase sprintf('%3.3d',imids(iii+imid-1)) imext]);
+            try
+                im = double(loadFileYuv(fileId,w,h,imids(iii+imid-1)));
+            catch
+                disp([fullFileName," has erroneous metadata!"])
+            end
             w1 = (nrleft+1-iii)/(nrleft);
             w2 = (iii-1)/(nrleft);
             maxy = double(log(1+maxfact*max(im(:))));
@@ -121,10 +157,11 @@ for k=1:length(yuv_names)
         end
     end
     close(v);
+    fclose(fileId);
 end
-    
-% 
-% outimbase = '/media/labuser-admin/seagate/hdr_videos/kmeans_tmo/acropolis_104_';
-% outimext='.png';
-% imids = 1:331;
-% 
+%     
+% % 
+% % outimbase = '/media/labuser-admin/seagate/hdr_videos/kmeans_tmo/acropolis_104_';
+% % outimext='.png';
+% % imids = 1:331;
+% % 
