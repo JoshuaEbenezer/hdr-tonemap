@@ -15,3 +15,6 @@ Matlab/mex implementation of
  M. Oskarsson, in J. Mathematical Imaging and Vision (2016)
 
 * See script video_dtm.m for how to run the video tone mapping on an input sequence of HDR images
+
+
+This repo is taken from https://github.com/hamburgerlady/democratic-tonemap. It has some modifications to allow reading from a YUV video file.
