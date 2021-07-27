@@ -12,8 +12,8 @@ def fread(fid, nelements, dtype):
      return data_array
 
 
-
-def hdr_yuv_read(filename,frame_num,height,width):
+# This is only for yuv420p10le
+def hdr_yuv_read_yuv420p10le(filename,frame_num,height,width):
     file_object = open(filename)
     file_object.seek(frame_num*height*width*3)
     y1 = fread(file_object,height*width,np.uint16)
