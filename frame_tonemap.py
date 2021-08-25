@@ -32,15 +32,18 @@ for frame_num in range(framenos):
     yuvend = time.time()
     print(yuvend-start,' is YUV read time')
 
+    # concatenate YUV
+    yuv = np.stack((y,u,v),axis=2)
+
+    # linearize YUV
+    yuv_linear = colour.models.eotf_PQ_BT2100(rgb_bt2020_pq)
+
     # convert to RGB in BT2020
-    rgb_bt2020_pq = hdr_utils.yuv2rgb_bt2020(y,u,v)
-    rgb_bt2020_pq = np.clip(rgb_bt2020_pq.astype(np.float32),0,1024)/1024.0
+    rgb_bt2020_linear = hdr_utils.yuv2rgb_bt2020(yuv_linear[:,:,0],yuv_linear[:,:,1],yuv_linear[:,:,2])
 
-    # linearize
-    rgb_bt2020_linear = colour.models.eotf_PQ_BT2100(rgb_bt2020_pq)
-
-    # clip luminance to 100 nits
-    rgb_bt2020_linear_clipped = np.clip(rgb_bt2020_linear,0,300)
+    # remove out of gamut colors and clip
+    # clip luminance to 300 nits --> heuristic, use if it improves appearance
+    # rgb_bt2020_linear_clipped = np.clip(rgb_bt2020_linear,0,300)
 
     # convert to BT709
     rgb_bt709_linear = colour.RGB_to_RGB(rgb_bt2020_linear,colour.models.RGB_COLOURSPACE_BT2020,colour.models.RGB_COLOURSPACE_BT709)
@@ -56,8 +59,6 @@ for frame_num in range(framenos):
     bgr_bt709_tonemapped_gamma = np.stack((rgb_bt709_tonemapped_gamma[:,:,2],rgb_bt709_tonemapped_gamma[:,:,1],rgb_bt709_tonemapped_gamma[:,:,0]),2)
 
     out.write(bgr_bt709_tonemapped_gamma)
-    if(frame_num==60):
-        break
 
 
 out.release()
